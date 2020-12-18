@@ -62,7 +62,6 @@ func parseConfig() {
 	}
 
 	log.Println("UploadDir", config.Base.UploadDir)
-	log.Println("URLPrefix", config.Base.URLPrefix)
 	log.Println("EnableBasicAuth", config.BaseAuth.Enable)
 	log.Println("starting...")
 }

@@ -3,8 +3,7 @@
 base:
   listen_address: ":8080"
   upload_dir: "tmp"
-  url_prefix: "http://localhost:8080/"
-  default_storage: local
+  default_storage: "local"
 
 basic_auth:
   enable: false
@@ -12,8 +11,8 @@ basic_auth:
   password: "xiaorui.cc"
 
 oss:
-  enable: true
-  public: true
+  enable: false
+  public: false
   endpoint: ""
   access_key: ""
   access_secret: ""
