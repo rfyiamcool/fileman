@@ -247,6 +247,10 @@ func (s *server) stop() error {
 
 // init
 func initResource() {
+	if config.Base.UploadDir == "" {
+		os.MkdirAll(config.Base.UploadDir, os.ModePerm)
+	}
+
 	if config.Oss.Enable {
 		osser := newOssHandler(config.Oss)
 		err := osser.init()
@@ -269,7 +273,9 @@ func main() {
 	}
 
 	// parse config
-	parseConfig()
+	config = parseConfig()
+	config.validate()
+	config.print()
 
 	// init each resource
 	initResource()

@@ -1,8 +1,7 @@
 package main
 
 import (
-	"log"
-
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -34,8 +33,26 @@ type BaseAuthConfig struct {
 	Password string `mapstructure:"password"`
 }
 
-func parseConfig() {
-	log.Println("config file: ", configFile)
+func (c *Config) validate() {
+	if config.Base.UploadDir == "" && config.Base.DefaultStorage == storageLocal {
+		logrus.Fatal("select local storage, but update path is null ?")
+	}
+
+	if !config.Oss.Enable && config.Base.DefaultStorage == storageAliyunOss {
+		logrus.Fatal("select aliyun oss storage, but oss config is null ?")
+	}
+}
+
+func (c *Config) print() {
+	logrus.Infof("upload_dir:       %s", config.Base.UploadDir)
+	logrus.Infof("baseauth.enable:  %v", config.BaseAuth.Enable)
+	logrus.Infof("default_storage:  %s", config.Base.DefaultStorage)
+	logrus.Infof("oss.enable:       %v", config.Oss.Enable)
+}
+
+func parseConfig() *Config {
+	logrus.Infof("config file: %s", configFile)
+
 	if configFile != "" {
 		viper.SetConfigFile(configFile)
 	} else {
@@ -48,20 +65,14 @@ func parseConfig() {
 	// If a config file is found, read it in.
 	viper.SetConfigType("yaml")
 	if err := viper.ReadInConfig(); err != nil {
-		log.Println("can't read config file")
-		panic(err)
+		logrus.Fatalf("can't read config file, err: %v", err)
 	}
+	logrus.Infof("read config from %s", viper.ConfigFileUsed())
 
-	log.Println("read config from", viper.ConfigFileUsed())
-
-	config = &Config{}
-	err := viper.Unmarshal(config)
+	cfg := &Config{}
+	err := viper.Unmarshal(cfg)
 	if err != nil {
-		log.Println("can't parse config file")
-		panic(err)
+		logrus.Fatal("can't parse config file")
 	}
-
-	log.Println("UploadDir", config.Base.UploadDir)
-	log.Println("EnableBasicAuth", config.BaseAuth.Enable)
-	log.Println("starting...")
+	return cfg
 }
