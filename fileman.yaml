@@ -1,0 +1,20 @@
+# fileman config
+
+base:
+  listen_address: ":8080"
+  upload_dir: "tmp"
+  url_prefix: "http://localhost:8080/"
+  default_storage: local
+
+basic_auth:
+  enable: false
+  username: "hll"
+  password: "xiaorui.cc"
+
+oss:
+  enable: true
+  public: true
+  endpoint: ""
+  access_key: ""
+  access_secret: ""
+  bucket_name: ""
