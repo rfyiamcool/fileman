@@ -157,6 +157,22 @@ func (s *server) handleGetAliyunOss(c *gin.Context) {
 	c.Data(http.StatusOK, plain, content)
 }
 
+func (s *server) handleGetS3(c *gin.Context) {
+	file := c.Param("file")
+	if file == "" {
+		c.String(http.StatusBadRequest, "not found file param")
+		return
+	}
+
+	bs, err := defaultS3Client.getObject(file)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Data(http.StatusOK, plain, bs)
+}
+
 func (s *server) handleUploadAliyunOss(c *gin.Context) {
 	if !config.Oss.Enable {
 		c.String(http.StatusOK, "not enable oss config")
@@ -166,7 +182,7 @@ func (s *server) handleUploadAliyunOss(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
-		logrus.Errorf("failed to upload local storage, err: %s", err.Error())
+		logrus.Errorf("failed to upload oss storage, err: %s", err.Error())
 		return
 	}
 
@@ -194,7 +210,43 @@ func (s *server) spliceAliossPath(c *gin.Context, fname string) string {
 		return fmt.Sprintf("https://%s.%s/%s", config.Oss.BucketName, config.Oss.Endpoint, fname)
 	}
 
-	return fmt.Sprintf("http://%s/wget/oss/%s", c.Request.Host, fname)
+	return fmt.Sprintf("http://%s/download/oss/%s", c.Request.Host, fname)
+}
+
+func (s *server) handleUploadS3(c *gin.Context) {
+	if !config.S3.Enable {
+		c.String(http.StatusOK, "not enable s3 config")
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		logrus.Errorf("failed to upload s3 storage, err: %s", err.Error())
+		return
+	}
+
+	file.Filename = genid()
+	fio, err := file.Open()
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		logrus.Errorf("failed to open file, err: %s", err.Error())
+		return
+	}
+
+	err = defaultS3Client.putObject(file.Filename, fio, file.Size)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		logrus.Errorf("failed to put object to s3, err: %s", err.Error())
+		return
+	}
+
+	dpath := s.spliceAliossPath(c, file.Filename)
+	c.String(http.StatusOK, s.makeResponse(file.Filename, dpath))
+}
+
+func (s *server) spliceS3Path(c *gin.Context, fname string) string {
+	return fmt.Sprintf("http://%s/download/s3/%s", c.Request.Host, fname)
 }
 
 func (s *server) registerWrapper() {
@@ -211,11 +263,13 @@ func (s *server) configureRouter() {
 	s.router.POST("/upload", s.handleUpload)
 	s.router.POST("/upload/local", s.handleUploadLocal)
 	s.router.POST("/upload/oss", s.handleUploadAliyunOss)
+	s.router.POST("/upload/s3", s.handleUploadS3)
 
 	// download
 	// s.router.StaticFS("/file/", http.Dir(config.Base.UploadDir))
 	s.router.GET("/file/:file", s.handleGetFile)
 	s.router.GET("/download/oss/:file", s.handleGetAliyunOss)
+	s.router.GET("/download/s3/:file", s.handleGetS3)
 	s.router.GET("/download/local/:file", s.handleGetLocal)
 }
 
@@ -247,13 +301,19 @@ func (s *server) stop() error {
 
 // init
 func initResource() {
-	if config.Base.UploadDir == "" {
+	if config.Base.UploadDir != "" {
 		os.MkdirAll(config.Base.UploadDir, os.ModePerm)
 	}
 
 	if config.Oss.Enable {
-		osser := newOssHandler(config.Oss)
-		err := osser.init()
+		defaultAlioss = newOssHandler(config.Oss)
+		err := defaultAlioss.init()
+		if err != nil {
+			logrus.Fatalf("failed to init oss client, err: %s", err.Error())
+		}
+	}
+	if config.S3.Enable {
+		err := newS3cli(context.Background(), config.S3).connect()
 		if err != nil {
 			logrus.Fatalf("failed to init oss client, err: %s", err.Error())
 		}

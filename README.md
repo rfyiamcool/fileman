@@ -64,6 +64,14 @@ oss:
   access_key: ""
   access_secret: ""
   bucket_name: ""
+
+s3:
+  enable: true
+  use_ssl: false
+  endpoint: ""
+  access_key: ""
+  access_secret: ""
+  bucket_name: ""
 ```
 
 #### dev run

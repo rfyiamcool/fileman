@@ -8,6 +8,7 @@ import (
 type Config struct {
 	Base     BaseConfig     `mapstructure:"base"`
 	Oss      OssConfig      `mapstructure:"oss"`
+	S3       S3Config       `mapstructure:"s3"`
 	BaseAuth BaseAuthConfig `mapstructure:"basic_auth"`
 }
 
@@ -21,6 +22,15 @@ type BaseConfig struct {
 type OssConfig struct {
 	Enable          bool   `mapstructure:"enable"`
 	Public          bool   `mapstructure:"public"`
+	Endpoint        string `mapstructure:"endpoint"`
+	AccessKeyID     string `mapstructure:"access_key"`
+	AccessKeySecret string `mapstructure:"access_secret"`
+	BucketName      string `mapstructure:"bucket_name"`
+}
+
+type S3Config struct {
+	Enable          bool   `mapstructure:"enable"`
+	UseSSl          bool   `mapstructure:"use_ssl"`
 	Endpoint        string `mapstructure:"endpoint"`
 	AccessKeyID     string `mapstructure:"access_key"`
 	AccessKeySecret string `mapstructure:"access_secret"`
