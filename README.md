@@ -10,10 +10,10 @@
 
 - local storage
 - aliyun oss storage
+- s3 (minio)
 
 **todo:**
 
-- s3
 - other oss
 
 ### API
